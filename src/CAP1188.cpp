@@ -1,16 +1,12 @@
-#include <I2Cdev.h>
+#include <I2Cdev.h> // TODO: Move to Wire.h
 #include <SPI.h>
 #include "CAP1188.h"
 #include "CAP1188_reg.h"
 
 /**
- * @brief Instantiates a new CAP1188 class
- *
- * @param resetPin pin where reset is connected
+ * @brief Instantiates a new CAP1188 class. Initialise it using *.initI2C(...) or *.initSPI(...)
  */
 CAP1188::CAP1188(){};
-
-// TODO: Implement SPI interfaces
 
 /**
  * @brief Initilises CAP1188 module using I2C interface.
@@ -18,7 +14,6 @@ CAP1188::CAP1188(){};
  * 1. CAP1188 is reset by holding RESET pin HIGH
  * 2. CAP1188 is set to allow multiple touches at the same time
  * 3. CAP1188 buttons and LEDs are linked (corresponding LED turns on when corresponding button is pressed)
- * 4. CAP1188 sample rate is adjusted to 8 samples/measurement
  * @param address I2C address of a device (possible options: 0x28, 0x29(defualt), 0x2A, 0x2B, 0x2C)
  * @param resetPin Chip RESET pin number
  * @returns void
@@ -49,7 +44,6 @@ void CAP1188::initI2C(uint8_t address, uint8_t resetPin)
  * 1. CAP1188 is reset by holding RESET pin HIGH
  * 2. CAP1188 is set to allow multiple touches at the same time
  * 3. CAP1188 buttons and LEDs are linked (corresponding LED turns on when corresponding button is pressed)
- * 4. CAP1188 sample rate is adjusted to 8 samples/measurement
  * @param csPin CS pin of a device (must be any arbitrary GPIO pin)
  * @param resetPin Chip RESET pin number
  * @returns void
@@ -67,7 +61,7 @@ void CAP1188::initSPI(uint8_t csPin, uint8_t resetPin)
     digitalWrite(_resetPin, HIGH);
     delay(10);
     digitalWrite(_resetPin, LOW);
-    resetSPI();
+    resetSPI(); // Reset SPI interface of CAP1188 module
 
     // Allow multiple touches
     setMultipleTouchConfiguration(0, 0);
@@ -83,7 +77,16 @@ void CAP1188::initSPI(uint8_t csPin, uint8_t resetPin)
 uint8_t CAP1188::getProductId()
 {
     uint8_t productId;
-    I2Cdev::readByte(_i2cAddress, CAP1188_PRODUCT_ID_REG, &productId);
+    if (!_i2c)
+    {
+        // SPI
+        productId = readRegisterFromAddress(CAP1188_PRODUCT_ID_REG);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::readByte(_i2cAddress, CAP1188_PRODUCT_ID_REG, &productId);
+    }
     return productId;
 }
 
@@ -93,9 +96,18 @@ uint8_t CAP1188::getProductId()
  */
 uint8_t CAP1188::getManufacturerId()
 {
-    uint8_t productId;
-    I2Cdev::readByte(_i2cAddress, CAP1188_MANUFACTURER_ID_REG, &productId);
-    return productId;
+    uint8_t manufacturerId;
+    if (!_i2c)
+    {
+        // SPI
+        manufacturerId = readRegisterFromAddress(CAP1188_MANUFACTURER_ID_REG);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::readByte(_i2cAddress, CAP1188_MANUFACTURER_ID_REG, &manufacturerId);
+    }
+    return manufacturerId;
 }
 
 /**
@@ -105,7 +117,16 @@ uint8_t CAP1188::getManufacturerId()
 uint8_t CAP1188::getRevision()
 {
     uint8_t revision;
-    I2Cdev::readByte(_i2cAddress, CAP1188_REVISION_REG, &revision);
+    if (!_i2c)
+    {
+        // SPI
+        revision = readRegisterFromAddress(CAP1188_REVISION_REG);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::readByte(_i2cAddress, CAP1188_REVISION_REG, &revision);
+    }
     return revision;
 }
 
@@ -114,7 +135,7 @@ uint8_t CAP1188::getRevision()
  * @param multipleTouchCircuitryEnable multiple touch circuitry enable setting (true to turn it on, false to turn it off)
  * @param numberOfSimultaneousTouches number of total simultaneous touches (1..4). This setting has no effect
  *                                      if multipleTouchCircuitryEnable is set to false
- * @return true
+ * @return true on success, false on error
  */
 bool CAP1188::setMultipleTouchConfiguration(bool multipleTouchCircuitryEnable, uint8_t numberOfSimultaneousTouches)
 {
@@ -142,18 +163,21 @@ bool CAP1188::setMultipleTouchConfiguration(bool multipleTouchCircuitryEnable, u
             break;
 
         default:
-            return true;
+            // Wrong amount of simultaneous touches specified
+            return false;
             break;
         }
     }
 
-    if (_i2c)
+    if (!_i2c)
     {
-        I2Cdev::writeByte(_i2cAddress, CAP1188_MULTIPLE_TOUCH_CONFIGURATION_REG, buff);
+        // SPI
+        writeRegisterAtAddress(CAP1188_MULTIPLE_TOUCH_CONFIGURATION_REG, buff);
     }
     else
     {
-        writeRegisterAtAddress(CAP1188_MULTIPLE_TOUCH_CONFIGURATION_REG, buff);
+        // I2C
+        I2Cdev::writeByte(_i2cAddress, CAP1188_MULTIPLE_TOUCH_CONFIGURATION_REG, buff);
     }
     return true;
 }
@@ -164,26 +188,38 @@ bool CAP1188::setMultipleTouchConfiguration(bool multipleTouchCircuitryEnable, u
  */
 bool CAP1188::setSensorInputLEDLinking(uint8_t ledsToLink)
 {
-    if(_i2c)
+    if (!_i2c)
     {
-        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_LED_LINKING_REG, ledsToLink);
+        // SPI
+        writeRegisterAtAddress(CAP1188_SENSOR_INPUT_LED_LINKING_REG, ledsToLink);
     }
     else
     {
-        writeRegisterAtAddress(CAP1188_SENSOR_INPUT_LED_LINKING_REG, ledsToLink);
+        // I2C
+        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_LED_LINKING_REG, ledsToLink);
     }
     return true;
 }
 
 /**
  * @brief Reads keys pressed from a module. I.e.
- * @example if key 1 & 3 pressed, returns b00000101 (5 in decimal)
+ * if key 1 & 3 pressed, returns b00000101 (5 in decimal)
  * @return keys pressed in binary format
  */
 uint8_t CAP1188::getSensorInputs()
 {
     uint8_t keys;
-    I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_STATUS_REG, &keys);
+    // Reading keys
+    if (!_i2c)
+    {
+        // SPI
+        keys = readRegisterFromAddress(CAP1188_SENSOR_INPUT_STATUS_REG);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_STATUS_REG, &keys);
+    }
     if (keys)
     {
         // Bring INT down
@@ -191,10 +227,31 @@ uint8_t CAP1188::getSensorInputs()
         // 2. Modify INT bit (located at BIT0)
         // 3. Write register back
         uint8_t currentRegState;
-        I2Cdev::readByte(_i2cAddress, CAP1188_MAIN_CONTROL_REG, &currentRegState);
+        if (!_i2c)
+        {
+            // SPI
+            currentRegState = readRegisterFromAddress(CAP1188_MAIN_CONTROL_REG);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::readByte(_i2cAddress, CAP1188_MAIN_CONTROL_REG, &currentRegState);
+        }
+
         currentRegState = currentRegState & ~0x01;
-        I2Cdev::writeByte(_i2cAddress, CAP1188_MAIN_CONTROL_REG, currentRegState);
+
+        if (!_i2c)
+        {
+            // SPI
+            writeRegisterAtAddress(CAP1188_MAIN_CONTROL_REG, currentRegState);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::writeByte(_i2cAddress, CAP1188_MAIN_CONTROL_REG, currentRegState);
+        }
     }
+
     return keys;
 }
 
@@ -204,15 +261,24 @@ uint8_t CAP1188::getSensorInputs()
  * @param samplesPerMeasurement Determines the number of samples that are taken for all active channels during the sensor cycle (use CAP1188_SAMPLES_PER_MEASUREMENT_...)
  * @param samplingTime Determines the time to take a single sample when the device is in Standby (use CAP1188_SAMPLING_TIME_...)
  * @param cycleTime Determines the overall cycle time for all measured channels during standby operation (use CAP1188_CYCLE_TIME_...)
- * @return 0 on success
+ * @return true
  */
 bool CAP1188::setStandbyConfiguration(uint8_t averageSum, uint8_t samplesPerMeasurement, uint8_t samplingTime, uint8_t cycleTime)
 {
     uint8_t reg;
     reg = averageSum << 7 | samplesPerMeasurement << 4 | samplingTime << 2 | cycleTime;
-    I2Cdev::writeByte(_i2cAddress, CAP1188_STANDBY_CONFIGURATION_REG, reg);
-    // TODO: appropriate return code
-    return 0;
+    if (!_i2c)
+    {
+        // SPI
+        writeRegisterAtAddress(CAP1188_STANDBY_CONFIGURATION_REG, reg);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::writeByte(_i2cAddress, CAP1188_STANDBY_CONFIGURATION_REG, reg);
+    }
+
+    return true;
 }
 
 /**
@@ -221,18 +287,28 @@ bool CAP1188::setStandbyConfiguration(uint8_t averageSum, uint8_t samplesPerMeas
  * @param samplesPerMeasurement buffer to receive "amount of samples per measurement" in to
  * @param samplingTime buffer to receive "sampling time" in to
  * @param cycleTime buffer to receive "cycle time" in to
- * @return 0 on success
+ * @return true
  */
 bool CAP1188::getStandbyConfiguration(uint8_t *averageSum, uint8_t *samplesPerMeasurement, uint8_t *samplingTime, uint8_t *cycleTime)
 {
     uint8_t reg;
-    I2Cdev::readByte(_i2cAddress, CAP1188_STANDBY_CONFIGURATION_REG, &reg);
+    if (!_i2c)
+    {
+        // SPI
+        reg = readRegisterFromAddress(CAP1188_STANDBY_CONFIGURATION_REG);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::readByte(_i2cAddress, CAP1188_STANDBY_CONFIGURATION_REG, &reg);
+    }
+
     *averageSum = reg >> 7;
     *samplesPerMeasurement = (reg >> 4) & 0x07;
     *samplingTime = (reg >> 2) & 0x03;
     *cycleTime = reg & 0x03;
-    // TODO: appropriate return code
-    return 0;
+
+    return true;
 }
 
 /**
@@ -241,15 +317,24 @@ bool CAP1188::getStandbyConfiguration(uint8_t *averageSum, uint8_t *samplesPerMe
  * @param samplesPerMeasurement Determines the number of samples that are taken for all active channels during the sensor cycle (use CAP1188_SAMPLES_PER_MEASUREMENT_...)
  * @param samplingTime  Determines the time to take a single sample (use CAP1188_SAMPLING_TIME_...)
  * @param cycleTime Determines the number of samples that are taken for all active channels during the sensor cycle (use CAP1188_CYCLE_TIME_...)
- * @return 0 on success
+ * @return true
  */
 bool CAP1188::setAveragingAndSamplingConfig(uint8_t samplesPerMeasurement, uint8_t samplingTime, uint8_t cycleTime)
 {
     uint8_t reg;
     reg = samplesPerMeasurement << 4 | samplingTime << 2 | cycleTime;
-    I2Cdev::writeByte(_i2cAddress, CAP1188_AVERAGING_AND_SAMPLING_CONFIG_REG, reg);
-    // TODO: appropriate return code
-    return 0;
+    if (!_i2c)
+    {
+        // SPI
+        writeRegisterAtAddress(CAP1188_AVERAGING_AND_SAMPLING_CONFIG_REG, reg);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::writeByte(_i2cAddress, CAP1188_AVERAGING_AND_SAMPLING_CONFIG_REG, reg);
+    }
+
+    return true;
 }
 
 /**
@@ -258,83 +343,147 @@ bool CAP1188::setAveragingAndSamplingConfig(uint8_t samplesPerMeasurement, uint8
  * @param samplesPerMeasurement buffer to receive "amount of samples per measurement" in to
  * @param samplingTime buffer to receive "sampling time" in to
  * @param cycleTime buffer to receive "cycle time" in to
- * @return 0 on success
+ * @return true
  */
 bool CAP1188::getAveragingAndSamplingConfig(uint8_t *samplesPerMeasurement, uint8_t *samplingTime, uint8_t *cycleTime)
 {
     uint8_t reg;
-    I2Cdev::readByte(_i2cAddress, CAP1188_AVERAGING_AND_SAMPLING_CONFIG_REG, &reg);
+    if (!_i2c)
+    {
+        // SPI
+        reg = readRegisterFromAddress(CAP1188_AVERAGING_AND_SAMPLING_CONFIG_REG);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::readByte(_i2cAddress, CAP1188_AVERAGING_AND_SAMPLING_CONFIG_REG, &reg);
+    }
     *samplesPerMeasurement = (reg >> 4) & 0x07;
     *samplingTime = (reg >> 2) & 0x03;
     *cycleTime = reg & 0x03;
-    // TODO: appropriate return code
-    return 0;
+    return true;
 }
 /**
  * @brief Writes data to a specific Sensor Input Threshold register, which store the delta threshold that is used to determine if a touch has been detected
  * @param buttonNumber number of a button netween 1...8
  * @param threshold threshold number (USE CAP1188_SENSOR_INPUT_THRESHOLD_...)
- * @return 0 on success
+ * @return true on success, false on error
  */
-bool CAP1188::setSensorInputThershold(uint8_t inputNumber, uint8_t threshold)
+bool CAP1188::setSensorInputThreshold(uint8_t buttonNumber, uint8_t threshold)
 {
-    uint8_t reg;
-    // Allow write to all SENSOR INPUT THRESHOLD REGISTERS at the same time
-    // 1. Read RECALIBRATION CONFIGURATION REGISTER
-    // 2. Set B7 to 0
-    // 3. Write RECALIBRATION CONFIGURATION REGISTER back
-    I2Cdev::readByte(_i2cAddress, CAPP1188_RECALIBRATION_CONFIGURATION_REG, &reg);
-    reg &= 0x7F;
-    I2Cdev::writeByte(_i2cAddress, CAPP1188_RECALIBRATION_CONFIGURATION_REG, reg);
-
-    switch (inputNumber)
+    switch (buttonNumber)
     {
     case 1:
-        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_1_THRESHOLD_REG, threshold);
+        if (!_i2c)
+        {
+            // SPI
+            writeRegisterAtAddress(CAP1188_SENSOR_INPUT_1_THRESHOLD_REG, threshold);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_1_THRESHOLD_REG, threshold);
+        }
         break;
 
     case 2:
-        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_2_THRESHOLD_REG, threshold);
+        if (!_i2c)
+        {
+            // SPI
+            writeRegisterAtAddress(CAP1188_SENSOR_INPUT_2_THRESHOLD_REG, threshold);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_2_THRESHOLD_REG, threshold);
+        }
         break;
 
     case 3:
-        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_3_THRESHOLD_REG, threshold);
+        if (!_i2c)
+        {
+            // SPI
+            writeRegisterAtAddress(CAP1188_SENSOR_INPUT_3_THRESHOLD_REG, threshold);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_3_THRESHOLD_REG, threshold);
+        }
         break;
 
     case 4:
-        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_4_THRESHOLD_REG, threshold);
+        if (!_i2c)
+        {
+            // SPI
+            writeRegisterAtAddress(CAP1188_SENSOR_INPUT_4_THRESHOLD_REG, threshold);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_4_THRESHOLD_REG, threshold);
+        }
         break;
 
     case 5:
-        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_5_THRESHOLD_REG, threshold);
+        if (!_i2c)
+        {
+            // SPI
+            writeRegisterAtAddress(CAP1188_SENSOR_INPUT_5_THRESHOLD_REG, threshold);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_5_THRESHOLD_REG, threshold);
+        }
         break;
 
     case 6:
-        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_6_THRESHOLD_REG, threshold);
+        if (!_i2c)
+        {
+            // SPI
+            writeRegisterAtAddress(CAP1188_SENSOR_INPUT_6_THRESHOLD_REG, threshold);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_6_THRESHOLD_REG, threshold);
+        }
         break;
 
     case 7:
-        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_7_THRESHOLD_REG, threshold);
+        if (!_i2c)
+        {
+            // SPI
+            writeRegisterAtAddress(CAP1188_SENSOR_INPUT_7_THRESHOLD_REG, threshold);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_7_THRESHOLD_REG, threshold);
+        }
         break;
 
     case 8:
-        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_8_THRESHOLD_REG, threshold);
+        if (!_i2c)
+        {
+            // SPI
+            writeRegisterAtAddress(CAP1188_SENSOR_INPUT_8_THRESHOLD_REG, threshold);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_8_THRESHOLD_REG, threshold);
+        }
         break;
 
     default:
-        // Unknown button received
-        // TODO: Add logging
+        // Unknown button number received
+        return false;
         break;
     }
-    // Reset write to all SENSOR INPUT THRESHOLD REGISTERS at the same time (reset to default)
-    // 1. Read RECALIBRATION CONFIGURATION REGISTER
-    // 2. Set B7 to 1
-    // 3. Write RECALIBRATION CONFIGURATION REGISTER back
-    I2Cdev::readByte(_i2cAddress, CAPP1188_RECALIBRATION_CONFIGURATION_REG, &reg);
-    reg |= 0x80;
-    I2Cdev::writeByte(_i2cAddress, CAPP1188_RECALIBRATION_CONFIGURATION_REG, reg);
     // TODO: Return more appropriate error code
-    return 0;
+    return true;
 }
 /**
  * TODO: Function does not work as expected
@@ -342,65 +491,205 @@ bool CAP1188::setSensorInputThershold(uint8_t inputNumber, uint8_t threshold)
  * @param threshold threshold number (USE CAP1188_SENSOR_INPUT_THRESHOLD_...)
  * @return 0 on success
  */
-bool CAP1188::setSensorInputThersholdAll(uint8_t threshold)
+bool CAP1188::setSensorInputThresholdAll(uint8_t threshold)
 {
-    // Setting input threshold values
-    I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_1_THRESHOLD_REG, threshold);
-    // TODO: Return more appropriate error code
+    uint8_t reg;
+    // Allow write to all SENSOR INPUT THRESHOLD REGISTERS at the same time
+    // 1. Read RECALIBRATION CONFIGURATION REGISTER
+    // 2. Set B7 to 0
+    // 3. Write RECALIBRATION CONFIGURATION REGISTER back
+
+    if (!_i2c)
+    {
+        // SPI
+        reg = readRegisterFromAddress(CAPP1188_RECALIBRATION_CONFIGURATION_REG);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::readByte(_i2cAddress, CAPP1188_RECALIBRATION_CONFIGURATION_REG, &reg);
+    }
+
+    reg &= 0x7F;
+
+    if (!_i2c)
+    {
+        // SPI
+        writeRegisterAtAddress(CAPP1188_RECALIBRATION_CONFIGURATION_REG, reg);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::writeByte(_i2cAddress, CAPP1188_RECALIBRATION_CONFIGURATION_REG, reg);
+    }
+
+    // Setting input threshold value to 1st Input register which will modify all of them
+    if (!_i2c)
+    {
+        // SPI
+        writeRegisterAtAddress(CAP1188_SENSOR_INPUT_1_THRESHOLD_REG, threshold);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::writeByte(_i2cAddress, CAP1188_SENSOR_INPUT_1_THRESHOLD_REG, threshold);
+    }
+
+    // Reset write to all SENSOR INPUT THRESHOLD REGISTERS at the same time (reset to default)
+    // 1. Read RECALIBRATION CONFIGURATION REGISTER
+    // 2. Set B7 to 1
+    // 3. Write RECALIBRATION CONFIGURATION REGISTER back
+    if (!_i2c)
+    {
+        // SPI
+        reg = readRegisterFromAddress(CAPP1188_RECALIBRATION_CONFIGURATION_REG);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::readByte(_i2cAddress, CAPP1188_RECALIBRATION_CONFIGURATION_REG, &reg);
+    }
+
+    reg |= 0x80;
+
+    if (!_i2c)
+    {
+        // SPI
+        writeRegisterAtAddress(CAPP1188_RECALIBRATION_CONFIGURATION_REG, reg);
+    }
+    else
+    {
+        // I2C
+        I2Cdev::writeByte(_i2cAddress, CAPP1188_RECALIBRATION_CONFIGURATION_REG, reg);
+    }
+
     return 0;
 }
 
 /**
  * @brief Reads data from Sensor Input Threshold registers, which store the delta threshold that is used to determine if a touch has been detected
- * @param inputNumber number of a button netween 1...8
- * @return register content
+ * @param buttonNumber number of a button netween 1...8
+ * @return register content with selected button number threshold, 0 on error
  */
-uint8_t CAP1188::getSensorInputThershold(uint8_t inputNumber)
+uint8_t CAP1188::getSensorInputThreshold(uint8_t buttonNumber)
 {
     uint8_t reg;
-    switch (inputNumber)
+    switch (buttonNumber)
     {
     case 1:
-        I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_1_THRESHOLD_REG, &reg);
+        if (!_i2c)
+        {
+            // SPI
+            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_1_THRESHOLD_REG);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_1_THRESHOLD_REG, &reg);
+        }
         break;
 
     case 2:
-        I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_2_THRESHOLD_REG, &reg);
+        if (!_i2c)
+        {
+            // SPI
+            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_2_THRESHOLD_REG);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_2_THRESHOLD_REG, &reg);
+        }
         break;
 
     case 3:
-        I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_3_THRESHOLD_REG, &reg);
+        if (!_i2c)
+        {
+            // SPI
+            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_3_THRESHOLD_REG);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_3_THRESHOLD_REG, &reg);
+        }
         break;
 
     case 4:
-        I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_4_THRESHOLD_REG, &reg);
+        if (!_i2c)
+        {
+            // SPI
+            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_4_THRESHOLD_REG);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_4_THRESHOLD_REG, &reg);
+        }
         break;
 
     case 5:
-        I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_5_THRESHOLD_REG, &reg);
+        if (!_i2c)
+        {
+            // SPI
+            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_5_THRESHOLD_REG);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_5_THRESHOLD_REG, &reg);
+        }
         break;
 
     case 6:
-        I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_6_THRESHOLD_REG, &reg);
+        if (!_i2c)
+        {
+            // SPI
+            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_6_THRESHOLD_REG);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_6_THRESHOLD_REG, &reg);
+        }
         break;
 
     case 7:
-        I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_7_THRESHOLD_REG, &reg);
+        if (!_i2c)
+        {
+            // SPI
+            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_7_THRESHOLD_REG);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_7_THRESHOLD_REG, &reg);
+        }
         break;
 
     case 8:
-        I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_8_THRESHOLD_REG, &reg);
+        if (!_i2c)
+        {
+            // SPI
+            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_8_THRESHOLD_REG);
+        }
+        else
+        {
+            // I2C
+            I2Cdev::readByte(_i2cAddress, CAP1188_SENSOR_INPUT_8_THRESHOLD_REG, &reg);
+        }
         break;
 
     default:
         // Unknown button received
-        // TODO: Add logging
+        return 0;
         break;
     }
 
-    // TODO: Return more appropriate error code
     return reg;
 }
+
+/*  Below is minimal SPI functionality set required to communicate with CAP1188 via SPI */
 
 /**
  * @brief Sends a command to reset SPI interface on CAP1188

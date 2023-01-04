@@ -67,9 +67,9 @@ class CAP1188{
         bool getStandbyConfiguration(uint8_t* averageSum, uint8_t *samplesPerMeasurement, uint8_t *samplingTime, uint8_t *cycleTime);
         bool setAveragingAndSamplingConfig(uint8_t samplesPerMeasurement, uint8_t samplingTime, uint8_t cycleTime);
         bool getAveragingAndSamplingConfig(uint8_t *samplesPerMeasurement, uint8_t *samplingTime, uint8_t *cycleTime);
-        bool setSensorInputThershold(uint8_t inputNumber, uint8_t threshold);
-        bool setSensorInputThersholdAll(uint8_t threshold);
-        uint8_t getSensorInputThershold(uint8_t inputNumber);
+        bool setSensorInputThreshold(uint8_t buttonNumber, uint8_t threshold);
+        bool setSensorInputThresholdAll(uint8_t threshold);
+        uint8_t getSensorInputThreshold(uint8_t inputNumber);
 
     private:
         // SPI related functions start
