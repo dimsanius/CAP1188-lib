@@ -70,13 +70,16 @@ class CAP1188{
         bool setSensorInputThershold(uint8_t inputNumber, uint8_t threshold);
         bool setSensorInputThersholdAll(uint8_t threshold);
         uint8_t getSensorInputThershold(uint8_t inputNumber);
+
+    private:
+        // SPI related functions start
         uint8_t readRegisterFromAddress(uint8_t regAddress);
         bool writeRegisterAtAddress(uint8_t regAddress, uint8_t data);
-    private:
-        bool resetSPI();
         bool setRegisterAddress(uint8_t regAddress);
         uint8_t readRegister();
         bool writeRegister(uint8_t data);
+        bool resetSPI();
+        // SPI related functions end
         bool _i2c;
         int8_t _i2cAddress, _resetPin, _csPin;
 };
