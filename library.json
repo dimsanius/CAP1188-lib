@@ -1,8 +1,8 @@
 {
-    "name": "CAP1188",
+    "name": "CAP1188-lib",
     "version": "1.0.0",
-    "keywords": "cap1188-dev, cap1188",
-    "description": "Driver for CAP1188 touch-capacitive sensor",
+    "keywords": "cap1188-lib, cap1188",
+    "description": "Library for CAP1188 touch-capacitive sensor",
     "include": "Arduino/I2Cdev",
     "frameworks": "arduino",
     "platforms": "*",
