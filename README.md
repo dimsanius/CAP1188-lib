@@ -37,6 +37,8 @@ cap1188_1.initI2C(CAP1188_I2C_ADDRESS, RESET_PIN);
 _Possible I2C addresses are listed in `CAP1188.h`_
 
 ### SPI configuration
+* Example wiring for SPI:
+![Wiring for SPI](assets/CAP1188_SPI_ESP32.png?raw=true "Wiring for SPI")
 * Connect MISO, MOSI, SCK pins from CAP1188 to according pins of your board
 * Connect CS pin to any available GPIO
 * Connect RST pin to any available GPIO
