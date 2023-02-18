@@ -80,7 +80,7 @@ uint8_t CAP1188::getProductId()
     if (!_i2c)
     {
         // SPI
-        productId = readRegisterFromAddress(CAP1188_PRODUCT_ID_REG);
+        readRegisterFromAddress(CAP1188_PRODUCT_ID_REG, &productId);
     }
     else
     {
@@ -100,7 +100,7 @@ uint8_t CAP1188::getManufacturerId()
     if (!_i2c)
     {
         // SPI
-        manufacturerId = readRegisterFromAddress(CAP1188_MANUFACTURER_ID_REG);
+        readRegisterFromAddress(CAP1188_MANUFACTURER_ID_REG, &manufacturerId);
     }
     else
     {
@@ -120,7 +120,7 @@ uint8_t CAP1188::getRevision()
     if (!_i2c)
     {
         // SPI
-        revision = readRegisterFromAddress(CAP1188_REVISION_REG);
+        readRegisterFromAddress(CAP1188_REVISION_REG, &revision);
     }
     else
     {
@@ -213,7 +213,7 @@ uint8_t CAP1188::getSensorInputs()
     if (!_i2c)
     {
         // SPI
-        keys = readRegisterFromAddress(CAP1188_SENSOR_INPUT_STATUS_REG);
+        readRegisterFromAddress(CAP1188_SENSOR_INPUT_STATUS_REG, &keys);
     }
     else
     {
@@ -230,7 +230,7 @@ uint8_t CAP1188::getSensorInputs()
         if (!_i2c)
         {
             // SPI
-            currentRegState = readRegisterFromAddress(CAP1188_MAIN_CONTROL_REG);
+            readRegisterFromAddress(CAP1188_MAIN_CONTROL_REG, &currentRegState);
         }
         else
         {
@@ -295,7 +295,7 @@ bool CAP1188::getStandbyConfiguration(uint8_t *averageSum, uint8_t *samplesPerMe
     if (!_i2c)
     {
         // SPI
-        reg = readRegisterFromAddress(CAP1188_STANDBY_CONFIGURATION_REG);
+        readRegisterFromAddress(CAP1188_STANDBY_CONFIGURATION_REG, &reg);
     }
     else
     {
@@ -351,7 +351,7 @@ bool CAP1188::getAveragingAndSamplingConfig(uint8_t *samplesPerMeasurement, uint
     if (!_i2c)
     {
         // SPI
-        reg = readRegisterFromAddress(CAP1188_AVERAGING_AND_SAMPLING_CONFIG_REG);
+        readRegisterFromAddress(CAP1188_AVERAGING_AND_SAMPLING_CONFIG_REG, &reg);
     }
     else
     {
@@ -502,7 +502,7 @@ bool CAP1188::setSensorInputThresholdAll(uint8_t threshold)
     if (!_i2c)
     {
         // SPI
-        reg = readRegisterFromAddress(CAPP1188_RECALIBRATION_CONFIGURATION_REG);
+        readRegisterFromAddress(CAPP1188_RECALIBRATION_CONFIGURATION_REG, &reg);
     }
     else
     {
@@ -542,7 +542,7 @@ bool CAP1188::setSensorInputThresholdAll(uint8_t threshold)
     if (!_i2c)
     {
         // SPI
-        reg = readRegisterFromAddress(CAPP1188_RECALIBRATION_CONFIGURATION_REG);
+        readRegisterFromAddress(CAPP1188_RECALIBRATION_CONFIGURATION_REG, &reg);
     }
     else
     {
@@ -580,7 +580,7 @@ uint8_t CAP1188::getSensorInputThreshold(uint8_t buttonNumber)
         if (!_i2c)
         {
             // SPI
-            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_1_THRESHOLD_REG);
+            readRegisterFromAddress(CAP1188_SENSOR_INPUT_1_THRESHOLD_REG, &reg);
         }
         else
         {
@@ -593,7 +593,7 @@ uint8_t CAP1188::getSensorInputThreshold(uint8_t buttonNumber)
         if (!_i2c)
         {
             // SPI
-            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_2_THRESHOLD_REG);
+            readRegisterFromAddress(CAP1188_SENSOR_INPUT_2_THRESHOLD_REG, &reg);
         }
         else
         {
@@ -606,7 +606,7 @@ uint8_t CAP1188::getSensorInputThreshold(uint8_t buttonNumber)
         if (!_i2c)
         {
             // SPI
-            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_3_THRESHOLD_REG);
+            readRegisterFromAddress(CAP1188_SENSOR_INPUT_3_THRESHOLD_REG, &reg);
         }
         else
         {
@@ -619,7 +619,7 @@ uint8_t CAP1188::getSensorInputThreshold(uint8_t buttonNumber)
         if (!_i2c)
         {
             // SPI
-            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_4_THRESHOLD_REG);
+            readRegisterFromAddress(CAP1188_SENSOR_INPUT_4_THRESHOLD_REG, &reg);
         }
         else
         {
@@ -632,7 +632,7 @@ uint8_t CAP1188::getSensorInputThreshold(uint8_t buttonNumber)
         if (!_i2c)
         {
             // SPI
-            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_5_THRESHOLD_REG);
+            readRegisterFromAddress(CAP1188_SENSOR_INPUT_5_THRESHOLD_REG, &reg);
         }
         else
         {
@@ -645,7 +645,7 @@ uint8_t CAP1188::getSensorInputThreshold(uint8_t buttonNumber)
         if (!_i2c)
         {
             // SPI
-            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_6_THRESHOLD_REG);
+            readRegisterFromAddress(CAP1188_SENSOR_INPUT_6_THRESHOLD_REG, &reg);
         }
         else
         {
@@ -658,7 +658,7 @@ uint8_t CAP1188::getSensorInputThreshold(uint8_t buttonNumber)
         if (!_i2c)
         {
             // SPI
-            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_7_THRESHOLD_REG);
+            readRegisterFromAddress(CAP1188_SENSOR_INPUT_7_THRESHOLD_REG, &reg);
         }
         else
         {
@@ -671,7 +671,7 @@ uint8_t CAP1188::getSensorInputThreshold(uint8_t buttonNumber)
         if (!_i2c)
         {
             // SPI
-            reg = readRegisterFromAddress(CAP1188_SENSOR_INPUT_8_THRESHOLD_REG);
+            readRegisterFromAddress(CAP1188_SENSOR_INPUT_8_THRESHOLD_REG, &reg);
         }
         else
         {
@@ -772,10 +772,11 @@ bool CAP1188::writeRegisterAtAddress(uint8_t regAddress, uint8_t data)
 /**
  * @brief Sends commands via SPI to CAP1188 to: (1) set a register pointer (2) read data from a register, pointed by register pointer
  * @param regAddress register address to read from
- * @return read register data
+ * @param data pointer to a buffer data to be read in
+ * @return void
  */
-uint8_t CAP1188::readRegisterFromAddress(uint8_t regAddress)
+void CAP1188::readRegisterFromAddress(uint8_t regAddress, uint8_t* data)
 {
     setRegisterAddress(regAddress);
-    return readRegister();
+    *data = readRegister();
 }

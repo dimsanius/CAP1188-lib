@@ -73,7 +73,7 @@ class CAP1188{
 
     private:
         // SPI related functions start
-        uint8_t readRegisterFromAddress(uint8_t regAddress);
+        void readRegisterFromAddress(uint8_t regAddress, uint8_t* data);
         bool writeRegisterAtAddress(uint8_t regAddress, uint8_t data);
         bool setRegisterAddress(uint8_t regAddress);
         uint8_t readRegister();
